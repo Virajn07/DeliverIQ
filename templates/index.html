@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>DeliverIQ — Dispatch Console</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+/* ══════════════════════════════════════════════════
+   RESET & TOKENS
+══════════════════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  /* Core palette */
+  --bg0:        #0a0b0d;
+  --bg1:        #0e1014;
+  --bg2:        #13151a;
+  --bg3:        #1a1d24;
+  --bg4:        #21252e;
+  --border:     #252932;
+  --border-hi:  #2e3340;
+
+  /* Accent — amber gold system */
+  --gold:       #f5a623;
+  --gold-dim:   #c47d0e;
+  --gold-glow:  rgba(245,166,35,0.12);
+  --gold-glow2: rgba(245,166,35,0.06);
+
+  /* Status colours */
+  --emerald:    #10b981;
+  --emerald-dim:#064e3b;
+  --sky:        #38bdf8;
+  --sky-dim:    #0c3a55;
+  --rose:       #f43f5e;
+  --rose-dim:   #4c0519;
+  --amber:      #f59e0b;
+  --amber-dim:  #451a03;
+
+  /* Text */
+  --t0: #eef0f4;
+  --t1: #9aa0ae;
+  --t2: #5a6070;
+  --t3: #32373f;
+
+  /* Fonts */
+  --f-display: 'Barlow Condensed', sans-serif;
+  --f-body:    'Barlow', sans-serif;
+  --f-mono:    'JetBrains Mono', monospace;
+
+  /* Layout */
+  --sidebar-w: 280px;
+  --header-h:  56px;
+  --radius:    10px;
+  --radius-lg: 16px;
+}
+
+html{height:100%}
+body{
+  background:var(--bg0);
+  color:var(--t0);
+  font-family:var(--f-body);
+  font-size:14px;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  /* Subtle grid texture */
+  background-image:
+    linear-gradient(rgba(245,166,35,0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245,166,35,0.015) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* ══════════════════════════════════════════════════
+   SCROLLBAR
+══════════════════════════════════════════════════ */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:var(--bg1)}
+::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:2px}
+
+/* ══════════════════════════════════════════════════
+   HEADER
+══════════════════════════════════════════════════ */
+header{
+  height:var(--header-h);
+  background:rgba(10,11,13,0.92);
+  border-bottom:1px solid var(--border);
+  backdrop-filter:blur(12px);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 1.6rem;
+  position:sticky;top:0;z-index:100;
+  flex-shrink:0;
+}
+
+.brand{display:flex;align-items:center;gap:.75rem}
+.brand-icon{
+  width:32px;height:32px;
+  background:linear-gradient(135deg,var(--gold),var(--gold-dim));
+  border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;
+  box-shadow:0 0 16px rgba(245,166,35,0.3);
+}
+.brand-text{
+  font-family:var(--f-display);
+  font-size:1.5rem;font-weight:800;letter-spacing:.04em;
+  color:var(--t0);
+  line-height:1;
+}
+.brand-text em{color:var(--gold);font-style:normal}
+.brand-sub{
+  font-family:var(--f-mono);font-size:.5rem;
+  color:var(--t2);letter-spacing:.18em;text-transform:uppercase;
+  margin-top:1px;
+}
+
+.hdr-center{display:flex;align-items:center;gap:1.5rem}
+.live-badge{
+  display:flex;align-items:center;gap:.4rem;
+  font-family:var(--f-mono);font-size:.6rem;
+  color:var(--emerald);letter-spacing:.12em;
+}
+.live-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--emerald);
+  animation:pulse-dot 2s ease-in-out infinite;
+}
+@keyframes pulse-dot{
+  0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.5)}
+  50%{box-shadow:0 0 0 5px rgba(16,185,129,0)}
+}
+
+.hdr-right{display:flex;align-items:center;gap:.6rem}
+.metric-pill{
+  background:var(--bg3);
+  border:1px solid var(--border);
+  border-radius:20px;
+  padding:.3rem .9rem;
+  display:flex;align-items:center;gap:.5rem;
+  font-family:var(--f-mono);font-size:.6rem;
+}
+.metric-pill .lbl{color:var(--t2);letter-spacing:.08em}
+.metric-pill .val{color:var(--gold);font-weight:500}
+.metric-pill .sep{color:var(--border-hi)}
+
+/* ══════════════════════════════════════════════════
+   LAYOUT
+══════════════════════════════════════════════════ */
+.layout{display:flex;flex:1;min-height:0;overflow:hidden}
+
+/* ── Sidebar ── */
+aside{
+  width:var(--sidebar-w);
+  min-width:var(--sidebar-w);
+  background:var(--bg1);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  overflow-y:auto;
+  position:sticky;
+  top:var(--header-h);
+  height:calc(100vh - var(--header-h));
+}
+
+.sb-section{padding:1.1rem 1.2rem;border-bottom:1px solid var(--border)}
+.sb-section:last-child{border-bottom:none}
+
+.sb-label{
+  font-family:var(--f-mono);font-size:.52rem;
+  color:var(--gold-dim);letter-spacing:.2em;text-transform:uppercase;
+  margin-bottom:.85rem;display:flex;align-items:center;gap:.4rem;
+}
+.sb-label::after{
+  content:'';flex:1;height:1px;
+  background:linear-gradient(90deg,var(--border),transparent);
+}
+
+/* Controls */
+.control-group{display:flex;flex-direction:column;gap:.8rem}
+.field{display:flex;flex-direction:column;gap:.35rem}
+.field-label{
+  font-family:var(--f-mono);font-size:.58rem;
+  color:var(--t2);letter-spacing:.1em;text-transform:uppercase;
+}
+
+select{
+  background:var(--bg2);
+  border:1px solid var(--border-hi);
+  border-radius:var(--radius);
+  color:var(--t0);
+  font-family:var(--f-mono);font-size:.72rem;
+  padding:.45rem .75rem;
+  outline:none;cursor:pointer;width:100%;
+  transition:border-color .15s,box-shadow .15s;
+  appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%235a6070' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right .65rem center;
+  padding-right:2rem;
+}
+select:focus{border-color:var(--gold-dim);box-shadow:0 0 0 3px var(--gold-glow)}
+select option{background:var(--bg2)}
+
+.slider-wrap{position:relative}
+input[type=range]{
+  width:100%;height:3px;
+  background:var(--bg4);
+  border-radius:2px;
+  accent-color:var(--gold);
+  cursor:pointer;
+  outline:none;
+}
+.slider-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:.35rem}
+.slider-val{
+  font-family:var(--f-mono);font-size:.8rem;
+  color:var(--gold);font-weight:500;
+}
+.slider-cap{
+  font-family:var(--f-mono);font-size:.52rem;
+  color:var(--t3);margin-top:.3rem;
+}
+
+/* Traffic hint */
+.traffic-hint{
+  margin-top:.35rem;
+  padding:.3rem .6rem;
+  border-radius:6px;
+  font-family:var(--f-mono);font-size:.57rem;
+  letter-spacing:.04em;display:flex;align-items:center;gap:.35rem;
+  border-left:2px solid;
+}
+.hint-low  {background:rgba(16,185,129,.07);color:var(--emerald);border-color:var(--emerald)}
+.hint-med  {background:rgba(245,158,11,.07);color:var(--amber);border-color:var(--amber)}
+.hint-high {background:rgba(244,63,94,.07);color:var(--rose);border-color:var(--rose)}
+
+/* Tier buttons */
+.tier-stack{display:flex;flex-direction:column;gap:.4rem}
+.tier-btn{
+  background:var(--bg2);
+  border:1px solid var(--border-hi);
+  border-radius:var(--radius);
+  padding:.6rem .85rem;
+  cursor:pointer;text-align:left;width:100%;
+  transition:all .15s;position:relative;overflow:hidden;
+}
+.tier-btn::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,var(--gold-glow),transparent);
+  opacity:0;transition:opacity .2s;
+}
+.tier-btn:hover::before,.tier-btn.active::before{opacity:1}
+.tier-btn.active{border-color:var(--gold-dim);background:rgba(245,166,35,.06)}
+.tier-btn-inner{display:flex;justify-content:space-between;align-items:flex-start}
+.tier-name{
+  font-family:var(--f-display);font-size:.95rem;
+  font-weight:700;color:var(--t0);letter-spacing:.03em;
+}
+.tier-desc{
+  font-family:var(--f-mono);font-size:.55rem;
+  color:var(--t2);margin-top:2px;letter-spacing:.03em;
+}
+.tier-price{
+  font-family:var(--f-mono);font-size:.62rem;
+  color:var(--gold);font-weight:500;
+  background:var(--gold-glow);
+  padding:2px 7px;border-radius:4px;
+  white-space:nowrap;
+}
+
+/* Metric boxes */
+.metrics-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+.metric-box{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--radius);padding:.65rem .75rem;
+  position:relative;overflow:hidden;
+}
+.metric-box::before{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,var(--gold-dim),transparent);
+}
+.metric-box .mv{
+  font-family:var(--f-mono);font-size:1rem;
+  font-weight:500;color:var(--gold);
+}
+.metric-box .ml{
+  font-family:var(--f-mono);font-size:.5rem;
+  color:var(--t2);letter-spacing:.12em;margin-top:2px;
+}
+
+/* LO footer */
+.lo-strip{
+  padding:.6rem 1.2rem;
+  font-family:var(--f-mono);font-size:.5rem;
+  color:var(--t3);letter-spacing:.1em;
+  text-align:center;
+  border-top:1px solid var(--border);
+  margin-top:auto;
+}
+
+/* ══════════════════════════════════════════════════
+   MAIN AREA
+══════════════════════════════════════════════════ */
+main{
+  flex:1;overflow-y:auto;
+  padding:1.4rem 1.6rem;
+  display:flex;flex-direction:column;gap:1rem;
+}
+
+/* Main header */
+.main-hdr{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:.5rem}
+.main-title{
+  font-family:var(--f-display);
+  font-size:1.7rem;font-weight:800;
+  letter-spacing:.04em;line-height:1;color:var(--t0);
+}
+.main-title em{color:var(--gold);font-style:normal}
+.main-sub{
+  font-family:var(--f-mono);font-size:.55rem;
+  color:var(--t2);letter-spacing:.12em;
+  text-transform:uppercase;margin-top:.25rem;
+}
+.partner-count{
+  font-family:var(--f-mono);font-size:.62rem;
+  color:var(--t1);
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:20px;padding:.25rem .75rem;
+}
+.partner-count span{color:var(--gold);font-weight:500}
+
+/* ── Out of range ── */
+.alert-bar{
+  background:rgba(244,63,94,.07);
+  border:1px solid rgba(244,63,94,.3);
+  border-radius:var(--radius);
+  padding:.75rem 1rem;
+  font-family:var(--f-mono);font-size:.68rem;
+  color:var(--rose);
+  display:none;align-items:center;gap:.6rem;
+}
+.alert-bar.show{display:flex}
+
+/* ── Confirm panel ── */
+.confirm-panel{
+  background:linear-gradient(135deg,rgba(245,166,35,.07),rgba(245,166,35,.03));
+  border:1px solid var(--gold-dim);
+  border-radius:var(--radius-lg);
+  padding:1.1rem 1.4rem;
+  display:none;
+  gap:1.4rem;
+  align-items:center;
+  position:relative;
+  overflow:hidden;
+}
+.confirm-panel::before{
+  content:'ORDER DISPATCHED';
+  position:absolute;right:-1rem;top:50%;transform:translateY(-50%) rotate(90deg);
+  font-family:var(--f-display);font-size:4.5rem;font-weight:800;
+  color:rgba(245,166,35,.04);letter-spacing:.1em;pointer-events:none;
+  white-space:nowrap;
+}
+.confirm-panel.show{display:flex;animation:slideDown .3s ease}
+@keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+
+.conf-info{flex:1;min-width:0}
+.conf-tag{
+  font-family:var(--f-mono);font-size:.52rem;
+  color:var(--gold-dim);letter-spacing:.15em;margin-bottom:.3rem;
+}
+.conf-name{
+  font-family:var(--f-display);font-size:1.4rem;
+  font-weight:700;letter-spacing:.03em;margin-bottom:.5rem;
+}
+.conf-chips{display:flex;flex-wrap:wrap;gap:.3rem}
+.conf-breakdown{
+  font-family:var(--f-mono);font-size:.58rem;
+  color:var(--t2);margin-top:.4rem;
+}
+.conf-breakdown span{color:var(--t1)}
+
+.conf-eta-block{text-align:right;flex-shrink:0}
+.conf-eta-num{
+  font-family:var(--f-display);font-size:3.8rem;
+  font-weight:800;color:var(--gold);
+  line-height:1;letter-spacing:-.02em;
+}
+.conf-eta-unit{
+  font-family:var(--f-mono);font-size:.52rem;
+  color:var(--t2);letter-spacing:.12em;margin-top:2px;
+}
+.conf-tier-badge{
+  display:inline-block;margin-top:.4rem;
+  font-family:var(--f-mono);font-size:.55rem;
+  padding:2px 8px;border-radius:4px;letter-spacing:.08em;
+}
+
+.unassign-btn{
+  background:transparent;border:1px solid var(--border-hi);
+  color:var(--t2);font-family:var(--f-mono);font-size:.6rem;
+  border-radius:6px;padding:3px 10px;cursor:pointer;margin-top:.5rem;
+  transition:all .2s;
+}
+.unassign-btn:hover{border-color:var(--rose);color:var(--rose)}
+
+/* ── Cards ── */
+.cards{display:flex;flex-direction:column;gap:.55rem}
+
+.card{
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  padding:.85rem 1.1rem;
+  display:grid;
+  grid-template-columns:1fr auto auto;
+  gap:1rem;align-items:center;
+  transition:border-color .2s,background .2s,box-shadow .2s,transform .15s;
+  animation:cardIn .3s ease both;
+  position:relative;overflow:hidden;
+}
+.card::after{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:transparent;transition:background .2s;border-radius:3px 0 0 3px;
+}
+.card:hover{
+  border-color:var(--border-hi);
+  background:var(--bg3);
+  transform:translateX(2px);
+}
+.card.best{
+  border-color:rgba(245,166,35,.4);
+  background:linear-gradient(135deg,rgba(245,166,35,.06),var(--bg2));
+}
+.card.best::after{background:var(--gold)}
+.card.assigned{
+  border-color:var(--gold-dim);
+  background:linear-gradient(135deg,rgba(245,166,35,.09),var(--bg2));
+  box-shadow:0 0 0 1px rgba(245,166,35,.15), 0 4px 24px rgba(245,166,35,.08);
+}
+.card.assigned::after{background:var(--gold);box-shadow:0 0 8px var(--gold)}
+
+@keyframes cardIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* Card: left section */
+.card-left{min-width:0}
+.card-name-row{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;margin-bottom:.45rem}
+.card-name{
+  font-family:var(--f-display);
+  font-size:1.1rem;font-weight:700;
+  letter-spacing:.03em;color:var(--t0);
+}
+.card-emoji{font-size:1rem}
+
+/* Badges */
+.badge{
+  font-family:var(--f-mono);font-size:.5rem;
+  font-weight:500;padding:2px 7px;border-radius:4px;
+  letter-spacing:.08em;white-space:nowrap;
+  text-transform:uppercase;
+}
+.badge-best    {background:var(--gold);color:#0a0b0d;font-weight:700}
+.badge-assigned{background:rgba(245,166,35,.15);color:var(--gold);border:1px solid var(--gold-dim)}
+.badge-bike    {background:rgba(56,189,248,.1);color:var(--sky);border:1px solid rgba(56,189,248,.2)}
+
+/* Chips */
+.chips{display:flex;flex-wrap:wrap;gap:.28rem;margin-bottom:.4rem}
+.chip{
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:5px;padding:2px 8px;
+  font-family:var(--f-mono);font-size:.58rem;color:var(--t1);
+  display:inline-flex;align-items:center;gap:.25rem;
+}
+.chip-gold  {background:var(--gold-glow);border-color:rgba(245,166,35,.2);color:var(--gold)}
+.chip-green {background:rgba(16,185,129,.07);border-color:rgba(16,185,129,.2);color:var(--emerald)}
+.chip-red   {background:rgba(244,63,94,.07);border-color:rgba(244,63,94,.2);color:var(--rose)}
+.chip-blue  {background:rgba(56,189,248,.07);border-color:rgba(56,189,248,.2);color:var(--sky)}
+
+/* ETA breakdown row */
+.eta-breakdown{
+  display:flex;align-items:center;gap:.3rem;flex-wrap:wrap;
+  margin-top:.35rem;
+}
+.etab-seg{
+  font-family:var(--f-mono);font-size:.56rem;color:var(--t2);
+  display:flex;align-items:center;gap:.2rem;
+}
+.etab-seg b{color:var(--t1)}
+.etab-div{color:var(--t3);font-size:.5rem;padding:0 .1rem}
+.etab-total{
+  font-family:var(--f-mono);font-size:.62rem;font-weight:500;
+  color:var(--gold);background:var(--gold-glow);
+  border:1px solid rgba(245,166,35,.2);
+  border-radius:4px;padding:1px 7px;margin-left:.15rem;
+}
+
+/* Card: ETA center */
+.card-eta{
+  display:flex;flex-direction:column;align-items:center;
+  padding:0 .5rem;border-left:1px solid var(--border);border-right:1px solid var(--border);
+  min-width:72px;
+}
+.eta-ring{
+  position:relative;width:56px;height:56px;
+}
+.eta-ring svg{transform:rotate(-90deg)}
+.eta-ring .ring-track{fill:none;stroke:var(--bg4);stroke-width:3}
+.eta-ring .ring-fill{
+  fill:none;stroke:var(--gold);stroke-width:3;
+  stroke-linecap:round;
+  stroke-dasharray:150;
+  stroke-dashoffset:150;
+  transition:stroke-dashoffset .8s cubic-bezier(.4,0,.2,1);
+}
+.eta-ring-center{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+}
+.eta-ring-num{
+  font-family:var(--f-display);font-size:1.2rem;
+  font-weight:800;color:var(--gold);line-height:1;
+}
+.eta-ring-lbl{
+  font-family:var(--f-mono);font-size:.38rem;
+  color:var(--t2);letter-spacing:.08em;margin-top:1px;
+}
+
+/* Card: buttons */
+.card-btns{display:flex;flex-direction:column;gap:.3rem;min-width:110px}
+.btn-assign{
+  background:transparent;
+  border:1px solid rgba(245,166,35,.4);
+  color:var(--gold);
+  font-family:var(--f-mono);font-size:.62rem;
+  border-radius:7px;padding:6px 12px;cursor:pointer;
+  transition:all .18s;text-align:center;white-space:nowrap;
+}
+.btn-assign:hover{
+  background:var(--gold);color:var(--bg0);
+  border-color:var(--gold);
+  box-shadow:0 0 12px rgba(245,166,35,.3);
+}
+.btn-assign.active-assign{
+  background:rgba(245,166,35,.15);border-color:var(--gold-dim);
+}
+.btn-profile{
+  background:transparent;border:1px solid var(--border-hi);
+  color:var(--t2);font-family:var(--f-mono);font-size:.58rem;
+  border-radius:7px;padding:5px 12px;cursor:pointer;
+  transition:all .18s;text-align:center;white-space:nowrap;
+}
+.btn-profile:hover{border-color:var(--t1);color:var(--t0)}
+
+/* Empty / loading */
+.state-msg{
+  text-align:center;padding:3rem 2rem;
+  font-family:var(--f-mono);font-size:.68rem;
+  color:var(--t2);line-height:2;letter-spacing:.04em;
+}
+.state-msg .icon{font-size:2rem;margin-bottom:.5rem}
+
+/* ══════════════════════════════════════════════════
+   MODAL
+══════════════════════════════════════════════════ */
+.overlay{
+  position:fixed;inset:0;background:rgba(10,11,13,.85);
+  backdrop-filter:blur(6px);z-index:300;
+  display:none;align-items:center;justify-content:center;
+  padding:1rem;
+}
+.overlay.show{display:flex;animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+.modal{
+  background:var(--bg1);
+  border:1px solid var(--border-hi);
+  border-radius:20px;
+  width:520px;max-width:100%;max-height:90vh;
+  overflow-y:auto;padding:2rem;
+  position:relative;
+  animation:modalIn .25s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes modalIn{from{opacity:0;transform:scale(.95) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
+
+.modal-close{
+  position:absolute;top:1.1rem;right:1.3rem;
+  background:var(--bg3);border:1px solid var(--border);
+  color:var(--t1);width:28px;height:28px;border-radius:7px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:.8rem;transition:all .15s;
+}
+.modal-close:hover{background:var(--bg4);border-color:var(--border-hi);color:var(--t0)}
+
+.modal-hero{margin-bottom:1.4rem}
+.modal-name{
+  font-family:var(--f-display);font-size:1.8rem;
+  font-weight:800;letter-spacing:.03em;margin-bottom:.15rem;
+}
+.modal-sub{
+  font-family:var(--f-mono);font-size:.6rem;
+  color:var(--t2);letter-spacing:.08em;
+}
+
+.modal-sec{
+  font-family:var(--f-mono);font-size:.52rem;
+  color:var(--gold-dim);letter-spacing:.2em;text-transform:uppercase;
+  margin:1.1rem 0 .6rem;
+  display:flex;align-items:center;gap:.5rem;
+}
+.modal-sec::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem}
+.stat-box{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--radius);padding:.6rem .75rem;
+  transition:border-color .15s;
+}
+.stat-box:hover{border-color:var(--border-hi)}
+.stat-val{
+  font-family:var(--f-display);font-size:1.05rem;
+  font-weight:700;color:var(--t0);
+}
+.stat-lbl{
+  font-family:var(--f-mono);font-size:.5rem;
+  color:var(--t2);letter-spacing:.1em;margin-top:2px;
+}
+
+/* Tier score bars */
+.tier-row{
+  display:flex;align-items:center;gap:.8rem;
+  padding:.45rem 0;border-bottom:1px solid var(--border);
+}
+.tier-row:last-child{border:none}
+.tier-row-name{
+  font-family:var(--f-mono);font-size:.65rem;
+  font-weight:500;min-width:70px;
+}
+.tier-track{flex:1;height:4px;background:var(--bg4);border-radius:2px;overflow:hidden}
+.tier-fill{height:100%;border-radius:2px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.tier-score{
+  font-family:var(--f-mono);font-size:.62rem;
+  color:var(--t1);min-width:28px;text-align:right;
+}
+
+.modal-assign{
+  width:100%;margin-top:1rem;
+  background:linear-gradient(135deg,var(--gold),var(--gold-dim));
+  color:var(--bg0);
+  font-family:var(--f-display);font-size:1rem;font-weight:700;
+  letter-spacing:.05em;border:none;border-radius:var(--radius);
+  padding:.75rem;cursor:pointer;
+  transition:all .2s;
+  box-shadow:0 4px 16px rgba(245,166,35,.2);
+}
+.modal-assign:hover{
+  box-shadow:0 6px 24px rgba(245,166,35,.35);
+  transform:translateY(-1px);
+}
+
+/* ══════════════════════════════════════════════════
+   CHIPS SHARED (confirm)
+══════════════════════════════════════════════════ */
+.chip-sm{
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:4px;padding:2px 7px;
+  font-family:var(--f-mono);font-size:.56rem;color:var(--t1);
+}
+
+footer{
+  text-align:center;padding:.6rem;
+  font-family:var(--f-mono);font-size:.5rem;
+  color:var(--t3);border-top:1px solid var(--border);
+  letter-spacing:.12em;flex-shrink:0;
+}
+</style>
+</head>
+<body>
+
+<!-- ══ HEADER ══════════════════════════════════════ -->
+<header>
+  <div class="brand">
+    <div class="brand-icon">🛵</div>
+    <div>
+      <div class="brand-text">Deliver<em>IQ</em></div>
+      <div class="brand-sub">Dispatch Console</div>
+    </div>
+  </div>
+
+  <div class="hdr-center">
+    <div class="live-badge">
+      <div class="live-dot"></div>
+      LIVE
+    </div>
+  </div>
+
+  <div class="hdr-right">
+    <div class="metric-pill">
+      <span class="lbl">MODEL</span>
+      <span class="sep">·</span>
+      <span class="val">XGBoost</span>
+      <span class="sep">·</span>
+      <span class="lbl">R²</span>
+      <span class="val">{{ metrics.R2 }}</span>
+      <span class="sep">·</span>
+      <span class="lbl">RMSE</span>
+      <span class="val">{{ metrics.RMSE }} min</span>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+
+<!-- ══ SIDEBAR ════════════════════════════════════ -->
+<aside>
+
+  <div class="sb-section">
+    <div class="sb-label">Conditions</div>
+    <div class="control-group">
+
+      <div class="field">
+        <div class="field-label">Traffic Density</div>
+        <select id="traffic" onchange="onTrafficChange()">
+          {% for t in traffic_opts %}
+          <option value="{{ t }}" {% if t=='Medium' %}selected{% endif %}>{{ t }}</option>
+          {% endfor %}
+        </select>
+        <div class="traffic-hint hint-med" id="traffic-hint">
+          <span>🟡</span> Moderate — mixed vehicle advantage
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="slider-row">
+          <div class="field-label">Customer Distance</div>
+          <div class="slider-val" id="dist-val">5.0 km</div>
+        </div>
+        <input type="range" id="distance" min="0.5" max="{{ max_distance }}"
+               step="0.5" value="5"
+               oninput="document.getElementById('dist-val').textContent=parseFloat(this.value).toFixed(1)+' km'"
+               onchange="fetchPredictions()"/>
+        <div class="slider-cap">Max {{ max_distance|int }} km &nbsp;·&nbsp; Bicycles ≤ 3 km only</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="sb-section">
+    <div class="sb-label">Delivery Tier</div>
+    <div class="tier-stack">
+      <button class="tier-btn" data-tier="Quick" onclick="selectTier('Quick')">
+        <div class="tier-btn-inner">
+          <div>
+            <div class="tier-name">⚡ Quick</div>
+            <div class="tier-desc">Fastest available · ETA priority</div>
+          </div>
+          <div class="tier-price">+ ₹49</div>
+        </div>
+      </button>
+      <button class="tier-btn active" data-tier="Standard" onclick="selectTier('Standard')">
+        <div class="tier-btn-inner">
+          <div>
+            <div class="tier-name">🛵 Standard</div>
+            <div class="tier-desc">Balanced speed & reliability</div>
+          </div>
+          <div class="tier-price">+ ₹29</div>
+        </div>
+      </button>
+      <button class="tier-btn" data-tier="Scheduled" onclick="selectTier('Scheduled')">
+        <div class="tier-btn-inner">
+          <div>
+            <div class="tier-name">🕐 Scheduled</div>
+            <div class="tier-desc">Reliability first · Budget friendly</div>
+          </div>
+          <div class="tier-price">+ ₹15</div>
+        </div>
+      </button>
+    </div>
+  </div>
+
+  <div class="sb-section">
+    <div class="sb-label">Model Performance</div>
+    <div class="metrics-grid">
+      <div class="metric-box">
+        <div class="mv">{{ metrics.R2 }}</div>
+        <div class="ml">R² SCORE</div>
+      </div>
+      <div class="metric-box">
+        <div class="mv">{{ metrics.RMSE }}</div>
+        <div class="ml">RMSE (min)</div>
+      </div>
+      <div class="metric-box">
+        <div class="mv">XGBoost</div>
+        <div class="ml">ALGORITHM</div>
+      </div>
+      <div class="metric-box">
+        <div class="mv" id="partner-count-sb">—</div>
+        <div class="ml">PARTNERS</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="lo-strip">LO1 · LO2 · LO3 · LO4 · LO5 · LO6 &nbsp;·&nbsp; DELIVERIQ v3.0</div>
+
+</aside>
+
+<!-- ══ MAIN ════════════════════════════════════════ -->
+<main>
+
+  <div class="main-hdr">
+    <div>
+      <div class="main-title">Available <em>Partners</em></div>
+      <div class="main-sub" id="main-sub">Ranked by priority score · auto-updates on condition change</div>
+    </div>
+    <div class="partner-count" id="partner-count-tag">— partners available</div>
+  </div>
+
+  <div class="alert-bar" id="alert-bar">
+    🚫 &nbsp; Delivery unavailable beyond {{ max_distance|int }} km from the restaurant.
+  </div>
+
+  <!-- Confirm panel -->
+  <div class="confirm-panel" id="confirm-panel">
+    <div class="conf-info">
+      <div class="conf-tag">ORDER DISPATCHED TO</div>
+      <div class="conf-name" id="conf-name">—</div>
+      <div class="conf-chips" id="conf-chips"></div>
+      <div class="conf-breakdown" id="conf-breakdown"></div>
+      <button class="unassign-btn" onclick="unassign()">✕ &nbsp;Unassign</button>
+    </div>
+    <div class="conf-eta-block">
+      <div class="conf-eta-num" id="conf-eta">—</div>
+      <div class="conf-eta-unit">TOTAL MINUTES</div>
+      <div><span class="conf-tier-badge" id="conf-tier-badge"></span></div>
+    </div>
+  </div>
+
+  <!-- Cards -->
+  <div class="cards" id="cards">
+    <div class="state-msg">
+      <div class="icon">🔄</div>
+      Loading delivery partners…
+    </div>
+  </div>
+
+</main>
+</div>
+
+<footer>DELIVERIQ DISPATCH CONSOLE &nbsp;·&nbsp; ML-POWERED ETA INTELLIGENCE &nbsp;·&nbsp; TRAFFIC-AWARE PRIORITY SCORING</footer>
+
+<!-- ══ MODAL ════════════════════════════════════════ -->
+<div class="overlay" id="overlay" onclick="closeOverlay(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-hero">
+      <div class="modal-name" id="modal-name">—</div>
+      <div class="modal-sub" id="modal-sub">—</div>
+    </div>
+
+    <div class="modal-sec">Performance Stats</div>
+    <div class="stat-grid" id="modal-stats"></div>
+
+    <div class="modal-sec">Tier Suitability</div>
+    <div id="modal-tiers"></div>
+
+    <div class="modal-sec">Current ETA Breakdown</div>
+    <div id="modal-eta-detail" style="font-family:var(--f-mono);font-size:.65rem;color:var(--t1);line-height:2"></div>
+
+    <button class="modal-assign" id="modal-assign-btn" onclick="assignFromModal()">
+      Assign This Partner →
+    </button>
+  </div>
+</div>
+
+<!-- ══ SCRIPT ══════════════════════════════════════ -->
+<script>
+const VEH_EMOJI  = {"Motorcycle":"🏍","Scooter":"🛵","Electric Scooter":"⚡","Bicycle":"🚲"};
+const VC_LBL     = ["","⚠ Poor","🔧 Fair","✅ Good","🌟 Excellent"];
+const TIER_COL   = {"Quick":"#f5a623","Standard":"#38bdf8","Scheduled":"#10b981"};
+const TIER_SUB   = {
+  "Quick":     "Fastest total ETA · Motorised priority",
+  "Standard":  "Rating + ETA balance · Reliable partners",
+  "Scheduled": "Reliability first · Lowest cancellation"
+};
+const TRAFFIC_HINTS = {
+  "Low":    ["hint-low",  "🟢 Clear roads — motorcycles fastest"],
+  "Medium": ["hint-med",  "🟡 Moderate — mixed vehicle advantage"],
+  "High":   ["hint-high", "🔴 Heavy — bicycles may outperform"],
+  "Jam":    ["hint-high", "🔴 Gridlock — e-scooter/bicycle best"],
+};
+
+let assigned = null, allProfiles = [], tier = "Standard", modalP = null;
+
+/* ── Helpers ── */
+function chip(txt, cls=""){
+  return `<span class="chip ${cls}">${txt}</span>`;
+}
+function chipSm(txt){return`<span class="chip-sm">${txt}</span>`}
+function stars(r){const f=Math.round(r);return"★".repeat(f)+"☆".repeat(5-f)}
+
+/* ── Traffic hint ── */
+function onTrafficChange(){
+  const t  = document.getElementById("traffic").value;
+  const el = document.getElementById("traffic-hint");
+  const [cls,txt] = TRAFFIC_HINTS[t]||["hint-med","🟡 Moderate"];
+  el.className = "traffic-hint "+cls;
+  el.innerHTML = `<span>${txt.split(" ")[0]}</span> ${txt.slice(txt.indexOf(" ")+1)}`;
+  fetchPredictions();
+}
+
+/* ── Tier ── */
+function selectTier(t){
+  tier = t;
+  document.querySelectorAll(".tier-btn")
+    .forEach(b=>b.classList.toggle("active",b.dataset.tier===t));
+  document.getElementById("main-sub").textContent = TIER_SUB[t];
+  fetchPredictions();
+}
+
+/* ── ETA ring ── */
+function etaRing(eta, id){
+  const max  = 90;
+  const pct  = Math.max(0,1 - eta/max);
+  const circ = 150;
+  const off  = circ - pct*circ;
+  const col  = eta<=20?"#10b981":eta<=40?"#f5a623":eta<=60?"#f59e0b":"#f43f5e";
+  return `
+    <div class="eta-ring" id="ring-${id}">
+      <svg width="56" height="56" viewBox="0 0 56 56">
+        <circle class="ring-track" cx="28" cy="28" r="24"/>
+        <circle class="ring-fill" cx="28" cy="28" r="24"
+          style="stroke:${col};stroke-dashoffset:${circ}" id="ring-fill-${id}"/>
+      </svg>
+      <div class="eta-ring-center">
+        <div class="eta-ring-num" style="color:${col}">${eta}</div>
+        <div class="eta-ring-lbl">MIN</div>
+      </div>
+    </div>`;
+}
+
+/* Animate ring after DOM insert */
+function animateRings(profiles){
+  const circ=150, max=90;
+  profiles.forEach(p=>{
+    const el = document.getElementById(`ring-fill-${p.id}`);
+    if(!el) return;
+    const pct = Math.max(0,1-p.eta/max);
+    setTimeout(()=>{el.style.strokeDashoffset = circ - pct*circ;},50);
+  });
+}
+
+/* ── Render cards ── */
+function renderCards(profiles){
+  allProfiles = profiles;
+  const c = document.getElementById("cards");
+  c.innerHTML = "";
+
+  const n = profiles.length;
+  document.getElementById("partner-count-tag").innerHTML = `<span>${n}</span> partner${n!==1?"s":""} available`;
+  document.getElementById("partner-count-sb").textContent = n;
+
+  if(!n){
+    c.innerHTML=`<div class="state-msg"><div class="icon">😔</div>
+      No available partners for this distance & conditions.<br/>
+      Try reducing distance or adjusting traffic.
+    </div>`;
+    return;
+  }
+
+  profiles.forEach((p,i)=>{
+    const isBest = i===0;
+    const isSel  = p.name===assigned;
+    const emoji  = VEH_EMOJI[p.vehicle_display]||"🛵";
+    const vc     = VC_LBL[Math.min(p.vehicle_condition,3)]||"✅ Good";
+    const rHl    = p.rating>=4.5;
+    const isBike = p.vehicle_display==="Bicycle";
+    const active = p.multiple_deliveries;
+    const loadCl = active>=2?"chip-red":active===0?"chip-green":"";
+    const loadLb = active===0?"Free":`${active} active`;
+    const cxCl   = p.cancellation_rate>0.07?"chip-red":"chip-green";
+
+    let cls="card";
+    if(isBest) cls+=" best";
+    if(isSel)  cls+=" assigned";
+
+    let badges="";
+    if(isBest) badges+=`<span class="badge badge-best">★ BEST MATCH</span>`;
+    if(isSel)  badges+=`<span class="badge badge-assigned">✓ ASSIGNED</span>`;
+    if(isBike) badges+=`<span class="badge badge-bike">SHORT RANGE</span>`;
+
+    const btnLbl = isSel?"✓ Assigned":isBest?"Assign Best →":"Assign →";
+    const qRow   = p.queue_delay>0
+      ? `<span class="etab-seg">⏳ <b>${p.queue_delay}m</b> queue</span><span class="etab-div">+</span>`
+      : "";
+
+    const div=document.createElement("div");
+    div.className=cls;
+    div.style.animationDelay=`${i*0.04}s`;
+    div.innerHTML=`
+      <div class="card-left">
+        <div class="card-name-row">
+          <span class="card-name">${p.name}</span>
+          <span class="card-emoji">${emoji}</span>
+          ${badges}
+        </div>
+        <div class="chips">
+          ${chip(`⭐ ${p.rating.toFixed(1)} ${stars(p.rating)}`,rHl?"chip-gold":"")}
+          ${chip(`${emoji} ${p.vehicle_display}`)}
+          ${chip(`📍 ${p.dist_from_restaurant.toFixed(1)} km away`,"chip-blue")}
+          ${chip(vc)}
+          ${chip(`📦 ${loadLb}`,loadCl)}
+          ${chip(`${(p.cancellation_rate*100).toFixed(1)}% cancel`,cxCl)}
+        </div>
+        <div class="eta-breakdown">
+          <span class="etab-seg">🏃 <b>${p.pickup_mins}m</b> pickup</span>
+          <span class="etab-div">+</span>
+          ${qRow}
+          <span class="etab-seg">🛵 <b>${p.delivery_eta}m</b> delivery</span>
+          <span class="etab-div">=</span>
+          <span class="etab-total">${p.eta} min total</span>
+        </div>
+      </div>
+      ${etaRing(p.eta, p.id)}
+      <div class="card-btns">
+        <button class="btn-assign ${isSel?'active-assign':''}"
+                onclick="assign('${p.name}')">${btnLbl}</button>
+        <button class="btn-profile" onclick="openModal(${p.id})">View Profile →</button>
+      </div>`;
+    c.appendChild(div);
+  });
+
+  animateRings(profiles);
+
+  if(assigned){
+    const sel = profiles.find(p=>p.name===assigned);
+    if(sel) updateConfirm(sel);
+  }
+}
+
+/* ── Confirm ── */
+function updateConfirm(p){
+  const emoji   = VEH_EMOJI[p.vehicle_display]||"🛵";
+  const traffic = document.getElementById("traffic").value;
+  const dist    = parseFloat(document.getElementById("distance").value).toFixed(1);
+  const TIER_BG = {"Quick":"rgba(245,166,35,.15)","Standard":"rgba(56,189,248,.12)","Scheduled":"rgba(16,185,129,.12)"};
+  const TIER_TX = {"Quick":"#f5a623","Standard":"#38bdf8","Scheduled":"#10b981"};
+
+  document.getElementById("conf-name").textContent = `${p.name} ${emoji}`;
+  document.getElementById("conf-eta").textContent  = p.eta;
+  document.getElementById("conf-chips").innerHTML  =
+    chipSm(`⭐ ${p.rating.toFixed(1)}`) +
+    chipSm(`${emoji} ${p.vehicle_display}`) +
+    chipSm(`🚦 ${traffic}`) +
+    chipSm(`📍 ${p.dist_from_restaurant.toFixed(1)} km from restaurant`) +
+    chipSm(`🏁 ${dist} km to customer`);
+
+  const qPart = p.queue_delay>0?` + ${p.queue_delay}m queue`:"";
+  document.getElementById("conf-breakdown").innerHTML =
+    `<span>🏃 ${p.pickup_mins}m pickup</span>${qPart} &nbsp;+&nbsp; <span>🛵 ${p.delivery_eta}m delivery</span>`;
+
+  const badge = document.getElementById("conf-tier-badge");
+  badge.textContent = `⚡ ${tier.toUpperCase()} TIER`;
+  badge.style.background = TIER_BG[tier]||"";
+  badge.style.color       = TIER_TX[tier]||"";
+  badge.style.border      = `1px solid ${TIER_TX[tier]}44`;
+  badge.style.borderRadius= "4px";
+  badge.style.padding     = "2px 8px";
+  badge.style.fontFamily  = "var(--f-mono)";
+  badge.style.fontSize    = ".55rem";
+
+  document.getElementById("confirm-panel").classList.add("show");
+}
+
+function assign(name){
+  assigned=name;
+  const p=allProfiles.find(p=>p.name===name);
+  if(p) updateConfirm(p);
+  renderCards(allProfiles);
+}
+function unassign(){
+  assigned=null;
+  document.getElementById("confirm-panel").classList.remove("show");
+  renderCards(allProfiles);
+}
+
+/* ── Modal ── */
+function openModal(id){
+  const p=allProfiles.find(p=>p.id===id);
+  if(!p) return;
+  modalP=p;
+  const emoji  = VEH_EMOJI[p.vehicle_display]||"🛵";
+  const expYrs = (p.experience_months/12).toFixed(1);
+  const vc     = VC_LBL[Math.min(p.vehicle_condition,3)]||"✅ Good";
+
+  document.getElementById("modal-name").textContent =`${p.name} ${emoji}`;
+  document.getElementById("modal-sub").textContent  =
+    `${p.vehicle_display} · ${p.area} · ${expYrs} yrs experience · Range ≤${p.max_distance_km} km`;
+
+  document.getElementById("modal-stats").innerHTML=`
+    <div class="stat-box"><div class="stat-val">⭐ ${p.rating.toFixed(1)}</div><div class="stat-lbl">RATING</div></div>
+    <div class="stat-box"><div class="stat-val">${p.total_deliveries.toLocaleString()}</div><div class="stat-lbl">DELIVERIES</div></div>
+    <div class="stat-box"><div class="stat-val">${p.age} yrs</div><div class="stat-lbl">AGE</div></div>
+    <div class="stat-box"><div class="stat-val">${(p.cancellation_rate*100).toFixed(1)}%</div><div class="stat-lbl">CANCEL RATE</div></div>
+    <div class="stat-box"><div class="stat-val">${p.experience_months} mo</div><div class="stat-lbl">EXPERIENCE</div></div>
+    <div class="stat-box"><div class="stat-val">${vc}</div><div class="stat-lbl">VEHICLE</div></div>
+    <div class="stat-box"><div class="stat-val">${p.dist_from_restaurant.toFixed(1)} km</div><div class="stat-lbl">FROM RESTAURANT</div></div>
+    <div class="stat-box"><div class="stat-val">${p.multiple_deliveries} / 2</div><div class="stat-lbl">ACTIVE ORDERS</div></div>
+    <div class="stat-box"><div class="stat-val">${p.priority_score}</div><div class="stat-lbl">PRIORITY SCORE</div></div>
+  `;
+
+  document.getElementById("modal-tiers").innerHTML=
+    Object.entries(p.tier_scores).map(([t,s])=>`
+      <div class="tier-row">
+        <span class="tier-row-name" style="color:${TIER_COL[t]||'#aaa'}">${t}</span>
+        <div class="tier-track">
+          <div class="tier-fill" style="width:${Math.min(s,100)}%;background:${TIER_COL[t]||'var(--gold)'}"></div>
+        </div>
+        <span class="tier-score">${s}</span>
+      </div>`).join("");
+
+  const qDetail = p.queue_delay>0
+    ? `<br/>⏳ Queue delay &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${p.queue_delay} min (${p.multiple_deliveries} active order${p.multiple_deliveries>1?"s":""})`:"";
+  document.getElementById("modal-eta-detail").innerHTML=
+    `🏃 Pickup leg &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${p.pickup_mins} min (${p.dist_from_restaurant.toFixed(1)} km to restaurant)
+${qDetail}
+<br/>🛵 Delivery leg &nbsp;&nbsp;&nbsp;&nbsp; ${p.delivery_eta} min (ML-predicted, ${tier} tier)
+<br/>━━━━━━━━━━━━━━━━━━━━━━
+<br/><span style="color:var(--gold);font-weight:500">Total ETA &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${p.eta} min</span>`;
+
+  document.getElementById("modal-assign-btn").textContent=
+    assigned===p.name?"✓ Already Assigned":"Assign This Partner →";
+
+  document.getElementById("overlay").classList.add("show");
+}
+function assignFromModal(){
+  if(modalP){assign(modalP.name);closeModal();}
+}
+function closeModal(){document.getElementById("overlay").classList.remove("show")}
+function closeOverlay(e){if(e.target===document.getElementById("overlay"))closeModal()}
+
+/* ── Fetch ── */
+async function fetchPredictions(){
+  const dist    = parseFloat(document.getElementById("distance").value);
+  const traffic = document.getElementById("traffic").value;
+  const MAX_KM  = {{ max_distance }};
+  const alertEl = document.getElementById("alert-bar");
+  const cardsEl = document.getElementById("cards");
+
+  if(dist>MAX_KM){
+    alertEl.classList.add("show");
+    cardsEl.innerHTML="";
+    document.getElementById("confirm-panel").classList.remove("show");
+    document.getElementById("partner-count-tag").innerHTML="<span>0</span> partners available";
+    document.getElementById("partner-count-sb").textContent="0";
+    return;
+  }
+  alertEl.classList.remove("show");
+  cardsEl.innerHTML=`<div class="state-msg"><div class="icon">⚙️</div>Matching delivery partners…</div>`;
+
+  try{
+    const res  = await fetch("/predict",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({traffic,distance_km:dist,tier})
+    });
+    const data = await res.json();
+    if(data.error==="out_of_range"){
+      alertEl.classList.add("show");
+      cardsEl.innerHTML="";
+      return;
+    }
+    renderCards(data.profiles);
+  }catch(err){
+    cardsEl.innerHTML=`<div class="state-msg"><div class="icon">⚠️</div>Cannot reach server.<br/>Is Flask running?</div>`;
+  }
+}
+
+window.addEventListener("load",fetchPredictions);
+</script>
+</body>
+</html>
